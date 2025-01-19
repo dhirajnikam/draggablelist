@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:dragtest/widget/mac_doc_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +10,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: MacDockWidget(),
     );
   }

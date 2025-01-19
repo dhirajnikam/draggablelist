@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 /// Main widget: A macOS-inspired dock of icons.
 class MacDockWidget extends StatefulWidget {
-  const MacDockWidget({Key? key}) : super(key: key);
+  const MacDockWidget({super.key});
 
   @override
   State<MacDockWidget> createState() => _MacDockWidgetState();
@@ -60,7 +60,7 @@ class _MacDockWidgetState extends State<MacDockWidget> {
                 children: List.generate(
                   dockItems.length,
                   (index) => DragTarget<IconData>(
-                    onWillAccept: (data) {
+                    onWillAcceptWithDetails: (data) {
                       if (draggingIndex != null) {
                         setState(() {
                           hoveredIndex = index;
@@ -73,7 +73,7 @@ class _MacDockWidgetState extends State<MacDockWidget> {
                         hoveredIndex = null;
                       });
                     },
-                    onAccept: (data) {
+                    onAcceptWithDetails: (data) {
                       setState(() {
                         final draggedIndex = draggingIndex!;
                         final draggedItem = dockItems.removeAt(draggedIndex);
