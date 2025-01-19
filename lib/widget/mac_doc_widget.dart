@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-/// Main widget: A macOS-inspired dock of icons.
 class MacDockWidget extends StatefulWidget {
   const MacDockWidget({super.key});
 
@@ -120,7 +119,7 @@ class _MacDockWidgetState extends State<MacDockWidget> {
     );
   }
 
-  /// Builds an individual icon in the dock with hover effects.
+  // hover effects.
   Widget _buildDockItem(int index) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -154,7 +153,7 @@ class _MacDockWidgetState extends State<MacDockWidget> {
     );
   }
 
-  /// Calculates the size of each icon based on hover proximity.
+  // size of each icon
   double _getScaledSize(int index) {
     return _getInterpolatedValue(
       index: index,
@@ -164,7 +163,7 @@ class _MacDockWidgetState extends State<MacDockWidget> {
     );
   }
 
-  /// Calculates how far each icon should shift vertically based on hover proximity.
+  // Calculates how far each icon should shift
   double _getTranslationY(int index) {
     return _getInterpolatedValue(
       index: index,
@@ -174,7 +173,7 @@ class _MacDockWidgetState extends State<MacDockWidget> {
     );
   }
 
-  /// Helper to interpolate icon properties (size or translation).
+  // Helper to size or translation
   double _getInterpolatedValue({
     required int index,
     required double baseValue,
