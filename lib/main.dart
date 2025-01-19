@@ -1,113 +1,202 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
-/// Entrypoint of the application.
-void main() {
-  runApp(const MyApp());
+/// Main widget: A macOS-inspired dock of icons.
+class MacOsInspiredDock extends StatefulWidget {
+  const MacOsInspiredDock({Key? key}) : super(key: key);
+
+  @override
+  State<MacOsInspiredDock> createState() => _MacOsInspiredDockState();
 }
 
-/// [Widget] building the [MaterialApp].
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class _MacOsInspiredDockState extends State<MacOsInspiredDock> {
+  int? hoveredIndex;
+  int? draggingIndex;
+  final double baseItemHeight = 40.0;
+  final double baseTranslationY = 0.0;
+  final double verticalItemPadding = 10.0;
+
+  final List<IconData> dockItems = [
+    Icons.person,
+    Icons.message,
+    Icons.call,
+    Icons.camera,
+    Icons.photo,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    hoveredIndex = null;
+    draggingIndex = null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Dock(
-            items: const [
-              Icons.person,
-              Icons.message,
-              Icons.call,
-              Icons.camera,
-              Icons.photo,
-            ],
-            builder: (e) {
-              return Container(
-                constraints: const BoxConstraints(minWidth: 48),
-                height: 48,
-                margin: const EdgeInsets.all(8),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Background bar
+            Positioned(
+              height: baseItemHeight + 10,
+              left: 0,
+              right: 0,
+              child: DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.primaries[e.hashCode % Colors.primaries.length],
+                  color: Colors.black12,
                 ),
-                child: Center(child: Icon(e, color: Colors.white)),
-              );
-            },
+              ),
+            ),
+            // Hover-animated icons
+            Padding(
+              padding: EdgeInsets.all(verticalItemPadding),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  dockItems.length,
+                  (index) => DragTarget<IconData>(
+                    onWillAccept: (data) {
+                      if (draggingIndex != null) {
+                        setState(() {
+                          hoveredIndex = index;
+                        });
+                      }
+                      return true;
+                    },
+                    onLeave: (data) {
+                      setState(() {
+                        hoveredIndex = null;
+                      });
+                    },
+                    onAccept: (data) {
+                      setState(() {
+                        final draggedIndex = draggingIndex!;
+                        final draggedItem = dockItems.removeAt(draggedIndex);
+                        dockItems.insert(index, draggedItem);
+                        draggingIndex = null;
+                        hoveredIndex = null;
+                      });
+                    },
+                    builder: (context, candidateData, rejectedData) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (hoveredIndex == index && draggingIndex != null)
+                            const SizedBox(
+                              width: 40.0,
+                              height: 40.0,
+                            ),
+                          Draggable<IconData>(
+                            data: dockItems[index],
+                            feedback: _buildDockItem(index),
+                            childWhenDragging: const SizedBox(),
+                            onDragStarted: () {
+                              setState(() {
+                                draggingIndex = index;
+                              });
+                            },
+                            onDragEnd: (_) {
+                              setState(() {
+                                draggingIndex = null;
+                              });
+                            },
+                            child: _buildDockItem(index),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds an individual icon in the dock with hover effects.
+  Widget _buildDockItem(int index) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => hoveredIndex = index),
+      onExit: (_) => setState(() => hoveredIndex = null),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        transform: Matrix4.identity()
+          ..translate(
+            0.0,
+            _getTranslationY(index),
+          ),
+        height: _getScaledSize(index),
+        width: _getScaledSize(index),
+        alignment: Alignment.bottomCenter,
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        child: Container(
+          height: _getScaledSize(index),
+          width: _getScaledSize(index),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.primaries[index % Colors.primaries.length],
+          ),
+          child: Icon(
+            dockItems[index],
+            size: _getScaledSize(index) / 2,
+            color: Colors.white,
           ),
         ),
       ),
     );
   }
-}
 
-/// Dock of the reorderable [items].
-class Dock<T> extends StatefulWidget {
-  const Dock({
-    super.key,
-    this.items = const [],
-    required this.builder,
-  });
-
-  /// Initial [T] items to put in this [Dock].
-  final List<T> items;
-
-  /// Builder building the provided [T] item.
-  final Widget Function(T) builder;
-
-  @override
-  State<Dock<T>> createState() => _DockState<T>();
-}
-
-/// State of the [Dock] used to manipulate the [_items].
-class _DockState<T> extends State<Dock<T>> {
-  /// [T] items being manipulated.
-  late final List<T> _items = widget.items.toList();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: Colors.black12,
-      ),
-      padding: const EdgeInsets.all(4),
-      child: SizedBox(
-        height: 65,
-        child: ReorderableListView(
-          shrinkWrap: true,
-          scrollDirection: Axis.horizontal,
-          // Disable default drag handles to remove the two-line icon.
-          buildDefaultDragHandles: false,
-          onReorder: (int oldIndex, int newIndex) {
-            setState(() {
-              if (newIndex > oldIndex) newIndex -= 1;
-              final T item = _items.removeAt(oldIndex);
-              _items.insert(newIndex, item);
-            });
-          },
-          proxyDecorator:
-              (Widget child, int index, Animation<double> animation) {
-            return ScaleTransition(
-              scale: animation.drive(Tween<double>(begin: 1.0, end: 1.05)),
-              child: Opacity(
-                opacity: 0.9,
-                child: child,
-              ),
-            );
-          },
-          children: _items.asMap().entries.map((entry) {
-            int index = entry.key;
-            T e = entry.value;
-            // Wrap each item with ReorderableDragStartListener for long-press dragging.
-            return ReorderableDragStartListener(
-              key: ValueKey(e),
-              index: index,
-              child: widget.builder(e),
-            );
-          }).toList(),
-        ),
-      ),
+  /// Calculates the size of each icon based on hover proximity.
+  double _getScaledSize(int index) {
+    return _getInterpolatedValue(
+      index: index,
+      baseValue: baseItemHeight,
+      maxValue: 70.0,
+      nonHoveredMaxValue: 50.0,
     );
   }
+
+  /// Calculates how far each icon should shift vertically based on hover proximity.
+  double _getTranslationY(int index) {
+    return _getInterpolatedValue(
+      index: index,
+      baseValue: baseTranslationY,
+      maxValue: -22.0,
+      nonHoveredMaxValue: -14.0,
+    );
+  }
+
+  /// Helper to interpolate icon properties (size or translation).
+  double _getInterpolatedValue({
+    required int index,
+    required double baseValue,
+    required double maxValue,
+    required double nonHoveredMaxValue,
+  }) {
+    if (hoveredIndex == null) return baseValue;
+
+    final difference = (hoveredIndex! - index).abs();
+    final itemsAffected = dockItems.length;
+
+    if (difference == 0) {
+      return maxValue;
+    } else if (difference <= itemsAffected) {
+      final ratio = (itemsAffected - difference) / itemsAffected;
+      return lerpDouble(baseValue, nonHoveredMaxValue, ratio) ?? baseValue;
+    } else {
+      return baseValue;
+    }
+  }
+}
+
+/// Entry point of the app.
+void main() {
+  runApp(const MaterialApp(home: MacOsInspiredDock()));
 }
